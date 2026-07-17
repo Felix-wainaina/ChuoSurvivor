@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "gemma3.4b"  
+MODEL_NAME = "gemma4:e4b"  
 
 class QuizRequest(BaseModel):
     text: str
