@@ -35,7 +35,7 @@ All AI inference runs **entirely on-device** via Ollama — no cloud API calls, 
 |---|---|
 | Frontend | React + TypeScript + Vite + Tailwind CSS v4 |
 | Backend | FastAPI (Python) |
-| AI Model | Gemma 4 (`gemma4:e4b`) via Ollama |
+| AI Model | Gemma 4 (`gemma-4-26b-a4b-it`) via Google AI Studio |
 | Offline Storage | IndexedDB (`idb-keyval`) |
 
 ---
@@ -80,7 +80,7 @@ cd backend
 python3 -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn main:app --reload
+uvicorn study_model:app --reload
 ```
 
 The backend will be available at `http://localhost:8000`.
