@@ -2,34 +2,43 @@
 import { useState } from 'react';
 import Navbar from '../components/layout/Navbar';
 import UnitCard from '../components/features/UnitCard';
+import { mockSavedNotes } from '../lib/resources';
 import type { Unit } from '../types/unit';
+import { Link } from 'react-router-dom';
 
 export default function MyUnits() {
-  // BACKEND DEV NOTE: This state currently uses mock data for the UI. 
-  // Swap this out with your database fetching logic (e.g., using useEffect or a custom hook like useUnits).
-  
-  // To test the "Empty State" (Image 1), just change this array to be completely empty: `useState<Unit[]>([])`
-  const [units, setUnits] = useState<Unit[]>([
-    { 
-      id: '1', 
-      name: 'Web Development', 
-      materialCount: 6, 
-      theme: { bg: 'bg-blue-100', border: 'border-blue-200', text: 'text-blue-900', icon: '💻' } 
-    },
-    { 
-      id: '2', 
-      name: 'Linear Algebra', 
-      materialCount: 3, 
-      theme: { bg: 'bg-purple-100', border: 'border-purple-200', text: 'text-purple-900', icon: '📐' } 
-    },
-  ]);
+  // Pulling dynamically from resources and mapping to your exact expected state structure
+  const [units, setUnits] = useState<Unit[]>(
+    mockSavedNotes.map((note) => ({
+      id: note.id,
+      name: note.title,
+      materialCount: note.quizQuestions.length + 1, // dynamically calculated metrics
+      theme: note.language === 'sw' 
+        ? { bg: 'bg-purple-100', border: 'border-purple-200', text: 'text-purple-900', icon: '📐' }
+        : { bg: 'bg-blue-100', border: 'border-blue-200', text: 'text-blue-900', icon: '💻' }
+    }))
+  );
 
   return (
     <div className="min-h-screen w-full flex flex-col font-dmsans bg-white text-slate-900">
       <Navbar />
 
       <main className="flex-1 px-8 md:px-16 max-w-5xl mx-auto w-full pt-12 pb-20">
-        <h1 className="text-3xl font-bold mb-8">My units</h1>
+        
+        {/* --- HEADER SECTION --- */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <h1 className="text-3xl font-bold">My units</h1>
+          
+          {/* Action item redirecting to upload flow */}
+          <Link to="/upload-material"
+            className="inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-medium px-5 py-2.5 rounded-full hover:bg-slate-800 transition-colors shadow-sm text-sm self-start sm:self-auto"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Upload study material
+          </Link>
+        </div>
 
         {/* LOGIC: If there are no units, show the Empty State. Otherwise, show the Dashboard. */}
         {units.length === 0 ? (
