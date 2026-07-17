@@ -3,11 +3,16 @@ import Navbar from '../components/layout/Navbar';
 import UnitCard from '../components/features/UnitCard';
 import AddUnitForm from '../components/features/AddUnitForm';
 import type { Unit, Material } from '../types/unit';
-import { Link } from 'react-router-dom';
 
 export default function MyUnits() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  
+  // Edit Modal States
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDateType, setEditDateType] = useState<'CAT' | 'Exam' | ''>('');
+  const [editDateValue, setEditDateValue] = useState('');
   
   // State for units and materials sourced purely from local memory
   const [units, setUnits] = useState<Unit[]>(() => {
@@ -53,12 +58,27 @@ export default function MyUnits() {
     setUnits([...units, newUnit]);
   };
 
-  const handleRenameUnit = (id: string, currentName: string) => {
-    const newName = window.prompt("Rename this unit:", currentName);
-    if (newName && newName.trim()) {
-      setUnits(units.map(u => u.id === id ? { ...u, name: newName.trim() } : u));
-    }
+  // Pre-fill and open the edit modal
+  const handleOpenEdit = (unit: Unit) => {
+    setEditingUnit(unit);
+    setEditName(unit.name);
+    setEditDateType(unit.dateType || '');
+    setEditDateValue(unit.dateValue || '');
     setActiveMenuId(null);
+  };
+
+  // Save the edited changes
+  const handleSaveEdit = () => {
+    if (!editingUnit || !editName.trim()) return;
+    
+    setUnits(units.map(u => u.id === editingUnit.id ? {
+      ...u,
+      name: editName.trim(),
+      dateType: editDateType === '' ? undefined : editDateType,
+      dateValue: editDateValue || undefined
+    } : u));
+    
+    setEditingUnit(null);
   };
 
   const handleDeleteUnit = (id: string) => {
@@ -72,6 +92,9 @@ export default function MyUnits() {
     setActiveMenuId(null);
   };
 
+  // Generate today's date string to block past dates in the edit modal
+  const todayStr = new Date().toISOString().split('T')[0];
+
   return (
     <div className="min-h-screen w-full flex flex-col font-dmsans bg-white text-slate-900 select-none">
       <Navbar />
@@ -81,16 +104,6 @@ export default function MyUnits() {
         {/* --- HEADER SECTION --- */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <h1 className="text-3xl font-bold">My units</h1>
-          
-          {/* Action item redirecting to upload flow */}
-          <Link to="/upload-material"
-            className="inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-medium px-5 py-2.5 rounded-full hover:bg-slate-800 transition-colors shadow-sm text-sm self-start sm:self-auto"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Upload study material
-          </Link>
         </div>
 
         {units.length === 0 ? (
@@ -132,10 +145,10 @@ export default function MyUnits() {
                     {activeMenuId === unit.id && (
                       <div className="absolute right-0 mt-1 w-32 bg-white border border-slate-200 shadow-xl rounded-xl p-1 flex flex-col gap-0.5 animate-fadeIn">
                         <button 
-                          onClick={(e) => { e.preventDefault(); handleRenameUnit(unit.id, unit.name); }}
+                          onClick={(e) => { e.preventDefault(); handleOpenEdit(unit); }}
                           className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg"
                         >
-                          Rename
+                          Edit
                         </button>
                         <button 
                           onClick={(e) => { e.preventDefault(); handleDeleteUnit(unit.id); }}
@@ -161,9 +174,77 @@ export default function MyUnits() {
         )}
       </main>
 
+      {/* Dismiss menus when clicking outside */}
       {activeMenuId && <div className="fixed inset-0 z-10" onClick={() => setActiveMenuId(null)} />}
 
       <AddUnitForm isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAdd={handleAddUnit} />
+
+      {/* Edit Unit Modal Overlay */}
+      {editingUnit && (
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+            <h2 className="text-xl font-black text-slate-900 mb-6">Edit Unit Details</h2>
+            
+            <div className="flex flex-col gap-5">
+              {/* Name Edit */}
+              <div>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1 block">Unit Name</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
+                  placeholder="e.g. Linear Algebra"
+                />
+              </div>
+
+              {/* Date Type & Value Edit */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1 block">Event Type</label>
+                  <select
+                    value={editDateType}
+                    onChange={(e) => setEditDateType(e.target.value as 'CAT' | 'Exam' | '')}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all bg-white"
+                  >
+                    <option value="">None</option>
+                    <option value="CAT">CAT</option>
+                    <option value="Exam">Exam</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1 block">Date</label>
+                  <input
+                    type="date"
+                    min={todayStr}
+                    value={editDateValue}
+                    onChange={(e) => setEditDateValue(e.target.value)}
+                    disabled={!editDateType}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all disabled:opacity-50 disabled:bg-slate-50 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 mt-4">
+                <button 
+                  onClick={() => setEditingUnit(null)} 
+                  className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveEdit} 
+                  disabled={!editName.trim()}
+                  className="px-6 py-2.5 text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
