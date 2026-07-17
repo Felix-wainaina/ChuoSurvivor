@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
 import MyUnits from './pages/MyUnits';
+import UploadMaterial from './pages/UploadMaterial';
 
 function App() {
   return (
@@ -11,6 +12,9 @@ function App() {
         
         {/* The dashboard page (My Units) */}
         <Route path="/my-units" element={<MyUnits />} />
+        {/* The upload page (Upload Material) */}
+        <Route path="/upload-material" element={<UploadMaterial />} />
+        
       </Routes>
     </Router>
   );
