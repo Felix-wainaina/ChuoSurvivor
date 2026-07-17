@@ -3,6 +3,7 @@ import Navbar from '../components/layout/Navbar';
 import UnitCard from '../components/features/UnitCard';
 import AddUnitForm from '../components/features/AddUnitForm';
 import type { Unit, Material } from '../types/unit';
+import { Link } from 'react-router-dom';
 
 export default function MyUnits() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -76,7 +77,21 @@ export default function MyUnits() {
       <Navbar />
 
       <main className="flex-1 px-8 md:px-16 max-w-5xl mx-auto w-full pt-12 pb-20">
-        <h1 className="text-3xl font-bold mb-8">My units</h1>
+        
+        {/* --- HEADER SECTION --- */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <h1 className="text-3xl font-bold">My units</h1>
+          
+          {/* Action item redirecting to upload flow */}
+          <Link to="/upload-material"
+            className="inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-medium px-5 py-2.5 rounded-full hover:bg-slate-800 transition-colors shadow-sm text-sm self-start sm:self-auto"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Upload study material
+          </Link>
+        </div>
 
         {units.length === 0 ? (
           <div className="w-full border-2 border-dashed border-gray-300 rounded-2xl p-16 flex flex-col items-center justify-center text-center bg-gray-50/50">
