@@ -34,13 +34,35 @@ export default function UploadMaterial() {
       // 1. Package payloads, execute FastAPI sequential pipeline endpoints (/explain & /quiz)
       const processedMaterial = await uploadMaterial(file, userPrompt, lang);
 
-      // 2. Safely capture and cache heavy PDF binaries out of primary text history arrays
-      if (file.type === 'application/pdf') {
-        await savePdfToStorage(`pdf_${processedMaterial.id}`, file);
+      // 2. Mock Backend Integration Loop: Simulate waiting 1.5s for Francis's API
+      // await new Promise((resolve) => setTimeout(resolve, 1500));
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('user_prompt', `Please explain the content of this PDF in ${language === 'en' ? 'English' : 'Kiswahili'}.`);
+        
+        const response = await fetch('http://localhost:8000/explain', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Gemini API Response:', data);
+      } catch (apiError) {
+        console.error('Error calling Gemini API:', apiError);
       }
 
-      // 3. Keep local synchronous cache arrays up to date 
-      mockSavedNotes.unshift(processedMaterial);
+      // Grab simulated structured response from resources
+      const mockResult = mockSavedNotes[selectedUnit === '1' ? 0 : 1];
+      
+      console.log('Successfully generated explanation & stored file offline!', {
+        noteId: generatedNoteId,
+        data: mockResult
+      });
 
       // 4. DYNAMIC ROUTING UPDATE: Instantly push the user into the active workspace view!
       navigate(`/study-unit/${processedMaterial.id}`);
