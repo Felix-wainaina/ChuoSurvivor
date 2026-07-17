@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
 import MyUnits from './pages/MyUnits';
 import UploadMaterial from './pages/UploadMaterial';
+import StudyUnitView from './pages/StudyUnitView';
 
 function App() {
   return (
@@ -14,6 +15,8 @@ function App() {
         <Route path="/my-units" element={<MyUnits />} />
         {/* The upload page (Upload Material) */}
         <Route path="/upload-material" element={<UploadMaterial />} />
+        {/* Dynamic Route to capture and map the unique item ID */}
+        <Route path="/study-unit/:id" element={<StudyUnitView />} />
         
       </Routes>
     </Router>
