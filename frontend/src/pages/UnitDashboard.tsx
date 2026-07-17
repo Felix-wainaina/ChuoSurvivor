@@ -6,9 +6,9 @@ import type { Unit, Material } from '../types/unit';
 
 interface Question {
   id: number;
-  text: string;
+  question: string;
   options: string[];
-  correct: number;
+  correct_answer: string;
 }
 
 interface StudyPlanPayload {
@@ -16,9 +16,8 @@ interface StudyPlanPayload {
   reminders: string[];
 }
 
-// Target your local Ollama instance running Gemma
-const OLLAMA_API_URL = 'http://localhost:8000'; // Ensure your local Ollama instance is running and accessible
-const OLLAMA_MODEL = 'gemma4'; // Swap to 'gemma' or your exact pulled model name if needed
+const GEMMA_API_URL = 'http://localhost:8000';
+const GEMMA_MODEL = 'gemma-4-26b-a4b-it';
 
 export default function UnitDashboard() {
   const { id } = useParams();
@@ -54,15 +53,20 @@ export default function UnitDashboard() {
     const scopeTitle = materialTitle || unitName;
     
     // Attempt to locate any contextual body text inside the file metadata if available
-    const contextualBody = previewingFile?.title || "General syllabus architecture definitions.";
+    const selectedMaterial = unitMaterials.find((material) => material.title === materialTitle);
+    const contextualBody = selectedMaterial?.explanationText;
     console.log(contextualBody);
 
     if (actionType === 'quiz') {
+      if (!contextualBody) {
+        setAgentError('This material has no saved explanation. Upload it again and choose “Generate Quiz”.');
+        return;
+      }
       setAiLoadingText(`Gemma is parsing context layers from "${scopeTitle}" to extract a 10-question matrix...`);
       
 
       try {
-        const response = await fetch(`${OLLAMA_API_URL}/quiz`, {
+        const response = await fetch(`${GEMMA_API_URL}/quiz`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -92,6 +96,13 @@ export default function UnitDashboard() {
           throw new Error("Gemma agent responded with an invalid structural schema format.");
         }
 
+        quizArray = quizArray.map((question, index) => ({
+          id: index,
+          question: question.question,
+          options: question.options,
+          correct_answer: question.correct_answer,
+        }));
+
         // 3. Reset state blocks and assign directly to the active layout configuration
         setQuizAnswers({});
         setQuizSubmitted(false);
@@ -104,7 +115,7 @@ export default function UnitDashboard() {
 
       } catch (err: any) {
         console.error("Agent execution fault:", err);
-        setAgentError(`Failed to coordinate with Gemma local agent. Ensure Ollama is running and '${OLLAMA_MODEL}' is pulled. Node details: ${err.message}`);
+        setAgentError(`Failed to generate a quiz with Gemma. ${err.message}`);
       } finally {
         setAiLoadingText(null);
       }
@@ -126,11 +137,11 @@ export default function UnitDashboard() {
       Do not include conversational filler text outside the JSON block.`;
 
       try {
-        const response = await fetch(`${OLLAMA_API_URL}/study_plan`, {
+        const response = await fetch(`${GEMMA_API_URL}/study_plan`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: OLLAMA_MODEL,
+            model: GEMMA_MODEL,
             messages: [
               { role: 'system', content: planSystemPrompt },
               { role: 'user', content: `Create a targeted study plan roadmap and 3 short actionable alerts for the unit "${unitName}" centered around "${scopeTitle}". Deadline parameters: ${timelineContextText}` }
@@ -150,7 +161,7 @@ export default function UnitDashboard() {
         setAgentReminders(parsedPayload.reminders || []);
       } catch (err: any) {
         console.error("Agent execution fault:", err);
-        setAgentError(`Failed to compile study plan via Gemma. Verify your local Ollama connection parameters.`);
+        setAgentError(`Failed to compile the study plan with Gemma. ${err instanceof Error ? err.message : ''}`);
       } finally {
         setAiLoadingText(null);
       }
@@ -160,7 +171,7 @@ export default function UnitDashboard() {
   const calculateQuizScore = () => {
     if (!activeQuizContext) return 0;
     return activeQuizContext.questions.reduce((score, q) => {
-      return score + (quizAnswers[q.id] === q.correct ? 1 : 0);
+      return score + (q.options[quizAnswers[q.id]] === q.correct_answer ? 1 : 0);
     }, 0);
   };
 
@@ -173,7 +184,7 @@ export default function UnitDashboard() {
         <div className="fixed inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center text-center px-6 animate-fadeIn">
           <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin mb-6"></div>
           <h3 className="text-xl font-bold text-slate-900 mb-2">{aiLoadingText}</h3>
-          <p className="text-sm font-medium text-slate-500">Ollama local instance processing via model: <span className="font-mono text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded">{OLLAMA_MODEL}</span></p>
+          <p className="text-sm font-medium text-slate-500">Google AI Studio processing via model: <span className="font-mono text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded">{GEMMA_MODEL}</span></p>
         </div>
       )}
 
@@ -196,12 +207,12 @@ export default function UnitDashboard() {
               {activeQuizContext.questions.map((q, idx) => (
                 <div key={q.id || idx} className="border border-slate-100 bg-slate-50/30 p-4 rounded-xl">
                   <p className="text-sm font-bold text-slate-900 leading-relaxed mb-3">
-                    <span className="text-blue-600 mr-1">Q{idx + 1}.</span> {q.text}
+                    <span className="text-blue-600 mr-1">Q{idx + 1}.</span> {q.question}
                   </p>
                   <div className="flex flex-col gap-2">
                     {q.options.map((opt, oIdx) => {
                       const isSelected = quizAnswers[q.id] === oIdx;
-                      const isCorrect = q.correct === oIdx;
+                      const isCorrect = q.correct_answer === opt;
                       let optionStyle = "border-slate-200 bg-white hover:bg-slate-50 text-slate-700";
                       
                       if (quizSubmitted) {
@@ -237,7 +248,7 @@ export default function UnitDashboard() {
                 <div className="flex items-center justify-between p-3 bg-slate-900 rounded-2xl text-white">
                   <div className="pl-2">
                     <p className="text-xs font-semibold text-slate-400">Quiz Grading Complete</p>
-                    <p className="text-lg font-black">Score: {calculateQuizScore()} / 10 ({calculateQuizScore() * 10}%)</p>
+                    <p className="text-lg font-black">Score: {calculateQuizScore()} / {activeQuizContext.questions.length}</p>
                   </div>
                   <button onClick={() => setActiveQuizContext(null)} className="bg-white text-slate-900 font-bold px-5 py-2.5 rounded-xl text-xs hover:bg-slate-100 transition-colors cursor-pointer">
                     Close Terminal
@@ -248,7 +259,7 @@ export default function UnitDashboard() {
                   onClick={() => setQuizSubmitted(true)}
                   className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl text-sm hover:bg-slate-800 transition-colors disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                 >
-                  Submit Answers ({Object.keys(quizAnswers).length}/10 answered)
+                  Submit Answers ({Object.keys(quizAnswers).length}/{activeQuizContext.questions.length} answered)
                 </button>
               )}
             </div>
@@ -279,7 +290,9 @@ export default function UnitDashboard() {
 
                 <div className="flex flex-col gap-4 text-xs font-sans leading-relaxed text-slate-600">
                   <h3 className="text-base font-black text-slate-900 tracking-tight font-mono">{previewingFile.title}</h3>
-                  <p>Document source verified locally inside sandboxed system constraints. Ready for Gemma agent mining ingestion protocols.</p>
+                  <p className="whitespace-pre-wrap">
+                    {previewingFile.explanationText || 'No saved explanation is available for this older upload.'}
+                  </p>
                 </div>
               </div>
             </div>

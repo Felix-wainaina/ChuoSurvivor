@@ -15,4 +15,10 @@ export interface Material {
   title: string;
   type: 'pdf' | 'image';
   uploadedAt: string;
+  explanationText?: string;
+  quizQuestions?: Array<{
+    question: string;
+    options: string[];
+    correct_answer: string;
+  }>;
 }

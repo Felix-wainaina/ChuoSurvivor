@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
 import type { Unit, Material } from '../types/unit';
+import { generateExplanation, generateQuiz } from '../services/api';
 
 export default function UploadMaterial() {
   const params = useParams();
@@ -65,6 +66,27 @@ export default function UploadMaterial() {
     setError(null);
 
     try {
+      const lang = language === 'Kiswahili' ? 'sw' : 'en';
+      const generatedMaterials: Material[] = [];
+
+      for (const file of selectedFiles) {
+        const explanation = await generateExplanation(file, '', lang);
+        const quizQuestions = taskMode === 'quiz'
+          ? await generateQuiz(explanation.text)
+          : [];
+
+        generatedMaterials.push({
+          id: crypto.randomUUID(),
+          unitId: targetUnitId ? targetUnitId.toString() : 'unassigned',
+          title: file.name,
+          type: file.type.includes('pdf') ? 'pdf' : 'image',
+          uploadedAt: new Date().toLocaleDateString('en-GB'),
+          explanationText: explanation.text,
+          quizQuestions,
+        });
+      }
+
+      /*
       // 1. Initialize FormData object
       const formData = new FormData();
 
@@ -92,30 +114,21 @@ export default function UploadMaterial() {
         throw new Error("Local model environment responded with an internal status error.");
       }
 
+      */
       // Read state storage and append array logs 
       const savedRawMaterials = localStorage.getItem('chuosurvivor_materials');
       const currentStoredMaterials: Material[] = savedRawMaterials ? JSON.parse(savedRawMaterials) : [];
 
-      const freshMaterialsBatch: Material[] = selectedFiles.map(file => ({
-        id: Date.now().toString() + Math.random().toString(36).substring(2, 7),
-        unitId: targetUnitId ? targetUnitId.toString() : 'unassigned',
-        title: file.name,
-        type: file.type.includes('pdf') ? 'pdf' : 'image',
-        uploadedAt: new Date().toLocaleDateString('en-GB') 
-      }));
-
       localStorage.setItem(
         'chuosurvivor_materials', 
-        JSON.stringify([...currentStoredMaterials, ...freshMaterialsBatch])
+        JSON.stringify([...currentStoredMaterials, ...generatedMaterials])
       );
 
       setIsLoading(false);
-      navigate('/units'); // Redirect back gracefully upon generation task success
+      navigate(targetUnitId ? `/unit/${targetUnitId}` : '/my-units');
     } catch (err) {
       setIsLoading(false);
-      setError(
-        "Could not communicate with local Gemma model engine. Ensure Ollama is open and running in your terminal background via 'ollama run gemma'."
-      );
+      setError(err instanceof Error ? err.message : 'Could not generate study material. Check that the backend is running.');
     }
   };
 
