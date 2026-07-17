@@ -9,5 +9,5 @@
 /* Set DM Sans as the default font for the whole app */
 body {
   font-family: var(--font-dmsans);
-  @apply bg-[#0f172a] text-white; /* Setting a dark default background based on your layout */
+  @apply bg-white text-slate-900; /* Global white background, dark text */
 }
