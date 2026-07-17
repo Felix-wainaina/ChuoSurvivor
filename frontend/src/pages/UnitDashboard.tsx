@@ -17,7 +17,7 @@ interface StudyPlanPayload {
 }
 
 // Target your local Ollama instance running Gemma
-const OLLAMA_API_URL = 'http://localhost:11434/api/chat';
+const OLLAMA_API_URL = 'http://localhost:8000'; // Ensure your local Ollama instance is running and accessible
 const OLLAMA_MODEL = 'gemma4'; // Swap to 'gemma' or your exact pulled model name if needed
 
 export default function UnitDashboard() {
@@ -55,52 +55,53 @@ export default function UnitDashboard() {
     
     // Attempt to locate any contextual body text inside the file metadata if available
     const contextualBody = previewingFile?.title || "General syllabus architecture definitions.";
+    console.log(contextualBody);
 
     if (actionType === 'quiz') {
       setAiLoadingText(`Gemma is parsing context layers from "${scopeTitle}" to extract a 10-question matrix...`);
       
-      const quizSystemPrompt = `You are the Gemma educational assessment agent. Analyze the provided study material context and generate exactly 10 high-quality multiple choice evaluation questions. 
-      You must respond strictly in JSON format matching this schema:
-      {
-        "questions": [
-          {
-            "id": 1,
-            "text": "The question string goes here?",
-            "options": ["Option A", "Option B", "Option C", "Option D"],
-            "correct": 0
-          }
-        ]
-      }
-      Do not return any conversational introductory text, thoughts, or markdown formatting blocks outside the JSON. "correct" must be an integer index from 0 to 3 matching the right choice.`;
 
       try {
-        const response = await fetch(OLLAMA_API_URL, {
+        const response = await fetch(`${OLLAMA_API_URL}/quiz`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: OLLAMA_MODEL,
-            messages: [
-              { role: 'system', content: quizSystemPrompt },
-              { role: 'user', content: `Generate a 10-question evaluation quiz based on this study target context: "${scopeTitle}". Context Material Body Hint: ${contextualBody}` }
-            ],
-            stream: false,
-            options: { temperature: 0.3 },
-            format: 'json' // Enforces strict local structural JSON compliance layer
+            text: contextualBody,
           })
         });
 
         if (!response.ok) throw new Error(`Ollama engine returned operational status code: ${response.status}`);
         
         const data = await response.json();
-        const parsedJson = JSON.parse(data.message.content);
-        
-        if (!parsedJson.questions || !Array.isArray(parsedJson.questions)) {
+        console.log("Quiz Response:", data);
+
+        // 1. Safely handle if data or data.quiz comes back as a pre-parsed object/array or raw string
+        let quizArray: any[] = [];
+
+        if (Array.isArray(data)) {
+          quizArray = data;
+        } else if (data.quiz) {
+          quizArray = typeof data.quiz === 'string' ? JSON.parse(data.quiz) : data.quiz;
+        } else if (typeof data === 'string') {
+          const parsedRoot = JSON.parse(data);
+          quizArray = parsedRoot.quiz || [];
+        }
+
+        // 2. Structural schema validation check matching your actual payload structure
+        if (!Array.isArray(quizArray) || quizArray.length === 0) {
           throw new Error("Gemma agent responded with an invalid structural schema format.");
         }
 
+        // 3. Reset state blocks and assign directly to the active layout configuration
         setQuizAnswers({});
         setQuizSubmitted(false);
-        setActiveQuizContext({ title: scopeTitle, questions: parsedJson.questions });
+
+        // Map the working quiz array into your target state
+        setActiveQuizContext({ 
+          title: scopeTitle, 
+          questions: quizArray // 👈 Passes the 5 valid question items smoothly
+        });
+
       } catch (err: any) {
         console.error("Agent execution fault:", err);
         setAgentError(`Failed to coordinate with Gemma local agent. Ensure Ollama is running and '${OLLAMA_MODEL}' is pulled. Node details: ${err.message}`);
@@ -125,7 +126,7 @@ export default function UnitDashboard() {
       Do not include conversational filler text outside the JSON block.`;
 
       try {
-        const response = await fetch(OLLAMA_API_URL, {
+        const response = await fetch(`${OLLAMA_API_URL}/study_plan`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

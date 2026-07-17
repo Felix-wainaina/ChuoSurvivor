@@ -65,18 +65,30 @@ export default function UploadMaterial() {
     setError(null);
 
     try {
-      // Test the local Ollama runtime port directly for gemma setup validation
-      const nativeInferenceCheck = await fetch('http://localhost:11434/api/generate', {
+      // 1. Initialize FormData object
+      const formData = new FormData();
+
+      // 2. Append multiple files using a loop 
+      // Note: If your backend expects a list of files, the key name is usually 'files'
+      selectedFiles.forEach((file) => {
+        formData.append('files', file); 
+      });
+
+      // 3. Append your metadata states
+      formData.append('language', language);
+      formData.append('unitId', targetUnitId ? targetUnitId.toString() : 'unassigned');
+
+      // 4. Send the request without setting Content-Type manually
+      const nativeInferenceCheck = await fetch(`http://localhost:8000/${taskMode}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'gemma', 
-          prompt: `Verify connection stability context summary execution for task: ${taskMode}`,
-          stream: false
-        })
+        body: formData, // 👈 Pass the FormData object here
       });
 
       if (!nativeInferenceCheck.ok) {
+        // Log the structural validation failure reason directly to console
+        const validationErrorPayload = await nativeInferenceCheck.json().catch(() => null);
+        console.error("422 Details:", validationErrorPayload);
+        
         throw new Error("Local model environment responded with an internal status error.");
       }
 
