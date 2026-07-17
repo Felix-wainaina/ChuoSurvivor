@@ -1,6 +1,4 @@
 import base64
-from email.mime import image
-import httpx
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -10,9 +8,10 @@ from pypdf import PdfReader
 import docx
 from pptx import Presentation
 import io
+import os
+import json
 from google import genai
 from google.genai import types
-import os
 
 
 app = FastAPI(title="Study Model API", description="API for processing images and text data.")
@@ -46,22 +45,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-try:
-    api_key = os.getenv("GEMINI_API_KEY")
-    client = genai.Client(api_key=api_key) if api_key else genai.Client()
-except Exception as e:
-    # If key isn't set globally, it can be passed explicitly: genai.Client(api_key="...")
-    print(f"Warning: Client initialization failed. Ensure GEMINI_API_KEY is set: {e}")
-    client = None
-
-MODEL_NAME = "gemma-4-31b-it"
+# Google AI Studio Gemma 4 configuration.
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemma-4-26b-a4b-it")
+gemini_client: genai.Client | None = None
 
 
 class QuizRequest(BaseModel):
     text: str
 
+
+class StudyPlanRequest(BaseModel):
+    messages: list[dict]
+
+
 class Response(BaseModel):
     text: str
+
+
+def get_gemini_client() -> genai.Client:
+    global gemini_client
+    if gemini_client is not None:
+        return gemini_client
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=500,
+            detail="GEMINI_API_KEY is missing. Add it to backend/.env and restart the backend.",
+        )
+    # Keep one client alive for the FastAPI process. Creating it as a temporary
+    # object can let its underlying HTTP client close during an async request.
+    gemini_client = genai.Client(api_key=api_key)
+    return gemini_client
 
 def optimize_image_as_base64(file_bytes: bytes) -> str:
     """
@@ -132,10 +147,8 @@ async def explain_content(
     user_prompt: str = Form(""),       # Optional custom focus prompt
     lang: str = Form("en")             # 'en' or 'sw'
 ):
-    """
-    Online mirror endpoint using the google-genai SDK.
-    Parses inputs and routes them to gemini-3.5-flash with strict schema validation.
-    """
+    """Explain an uploaded file with Gemma 4 through Google AI Studio."""
+
     file_bytes = await file.read()
     if not file_bytes:
         raise HTTPException(status_code=400, detail="No file uploaded.")
@@ -160,108 +173,145 @@ async def explain_content(
 
     final_prompt = f"{user_prompt}\n\n{fallback_prompt}".strip()
 
-    # 2. Build the contents list (No Ollama keys allowed here!)
-    contents_payload = []
+    # 2. Build Gemini content parts from either the uploaded image or extracted text.
+    content_parts: list[types.Part] = []
 
     if content_type.startswith("image/"):
-        # Image pathway
-        image_part = types.Part.from_bytes(
-            data=file_bytes,
-            mime_type=content_type,
-        )
-        contents_payload.extend([image_part, final_prompt])
+        content_parts = [
+            types.Part.from_text(text=final_prompt),
+            types.Part.from_bytes(data=file_bytes, mime_type=content_type),
+        ]
 
     elif content_type == "application/pdf" or filename.endswith(".pdf"):
         extracted_text = extract_text_from_pdf(file_bytes)
-        contents_payload.append(f"{final_prompt}\n\n=== SOURCE DOCUMENT ===\n{extracted_text}")
+        content_parts = [types.Part.from_text(text=f"{final_prompt}\n\n=== SOURCE DOCUMENT ===\n{extracted_text}")]
 
     elif filename.endswith(".docx"):
         extracted_text = extract_text_from_docx(file_bytes)
-        contents_payload.append(f"{final_prompt}\n\n=== SOURCE DOCUMENT ===\n{extracted_text}")
+        content_parts = [types.Part.from_text(text=f"{final_prompt}\n\n=== SOURCE DOCUMENT ===\n{extracted_text}")]
 
     elif filename.endswith(".pptx"):
         extracted_text = extract_text_from_pptx(file_bytes)
-        contents_payload.append(f"{final_prompt}\n\n=== SOURCE DOCUMENT ===\n{extracted_text}")
+        content_parts = [types.Part.from_text(text=f"{final_prompt}\n\n=== SOURCE DOCUMENT ===\n{extracted_text}")]
 
     elif content_type.startswith("text/") or filename.endswith((".txt", ".md", ".json")):
         try:
             extracted_text = file_bytes.decode("utf-8")
-            contents_payload.append(f"{final_prompt}\n\n=== SOURCE DOCUMENT ===\n{extracted_text}")
+            content_parts = [types.Part.from_text(text=f"{final_prompt}\n\n=== SOURCE DOCUMENT ===\n{extracted_text}")]
         except UnicodeDecodeError:
             raise HTTPException(status_code=400, detail="Unable to decode text file as UTF-8.")
     else:
         raise HTTPException(status_code=400, detail="Unsupported file format.")
 
-    # 3. Call Gemini using correct parameter separations
     try:
-        response = client.models.generate_content(
+        response = await get_gemini_client().aio.models.generate_content(
             model=MODEL_NAME,
-            contents=contents_payload,  # Only holds the parts/strings
+            contents=[types.Content(role="user", parts=content_parts)],
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction,  # System instructions go here!
-                temperature=0.4
-            )
+                system_instruction=[types.Part.from_text(text=system_instruction)],
+                thinking_config=types.ThinkingConfig(thinking_level="HIGH"),
+            ),
         )
+        if not response.text:
+            raise HTTPException(status_code=502, detail="Gemma returned an empty explanation.")
         return {"text": response.text.strip()}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gemini API generation error: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Gemma explanation generation failed: {exc}")
 
 @app.post("/quiz")
 async def generate_quiz(payload: QuizRequest):
-    """
-    Uses Gemini's built-in structured JSON schema enforcement to guarantee 
-    a flawless Quiz structure, skipping regex or parsing worries.
-    """
-    if not client:
-        raise HTTPException(status_code=500, detail="Gemini API client is not configured.")
+    """Generate a quiz with the Google AI Studio Gemma 4 configuration."""
+    system_instruction = """You are an expert assessment generator. Analyze the academic study guide and generate 3 highly relevant, concept-testing multiple-choice questions.
 
-    system_instruction = (
-        "You are an educational parser. Based on the provided explanation text, generate a list of "
-        "3 to 5 multiple-choice questions (MCQs) to check understanding."
-    )
-
-    user_prompt = f"Explanation Text to transform:\n{payload.explanation}"
-
-    # We outline the exact JSON schema we want returned.
-    # The API forces the model to match this exact output footprint.
-    quiz_schema = {
-        "type": "OBJECT",
-        "properties": {
-            "quiz": {
-                "type": "ARRAY",
-                "items": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "question": {"type": "STRING"},
-                        "options": {
-                            "type": "ARRAY",
-                            "items": {"type": "STRING"},
-                            "minItems": 4,
-                            "maxItems": 4
-                        },
-                        "correct_answer": {"type": "STRING"}
-                    },
-                    "required": ["question", "options", "correct_answer"]
-                }
-            }
-        },
-        "required": ["quiz"]
+Output ONLY valid JSON in this exact shape:
+{
+  "questions": [
+    {
+      "id": 1,
+      "question": "Clear, contextual question in the same language as the study guide.",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "answer": "The exact correct option text",
+      "explanation": "A short explanation of why the answer is correct."
     }
+  ]
+}
+
+Do not use Markdown fences or any text outside the JSON object."""
 
     try:
-        response = client.models.generate_content(
+        response = await get_gemini_client().aio.models.generate_content(
             model=MODEL_NAME,
-            contents=user_prompt,
+            contents=[types.Content(role="user", parts=[
+                types.Part.from_text(text=f"Study guide:\n{payload.text}"),
+            ])],
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json",
-                response_schema=quiz_schema,
-                temperature=0.5
-            )
+                thinking_config=types.ThinkingConfig(thinking_level="HIGH"),
+                tools=[types.Tool(google_search=types.GoogleSearch())],
+                system_instruction=[types.Part.from_text(text=system_instruction)],
+            ),
         )
-        
-        # Load string response natively to output clean JSON arrays
-        import json
-        return json.loads(response.text)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to compile online quiz: {str(e)}")
+        generated = json.loads((response.text or "").strip())
+        questions = generated.get("questions", [])
+        if not isinstance(questions, list) or not questions:
+            raise ValueError("The response did not include a questions array.")
+
+        # Preserve the existing frontend contract.
+        return {"quiz": [
+            {
+                "question": question["question"],
+                "options": question["options"],
+                "correct_answer": question["answer"],
+            }
+            for question in questions
+        ]}
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=502, detail=f"Gemma returned invalid quiz JSON: {exc}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Gemma quiz generation failed: {exc}")
+
+
+@app.post("/study_plan")
+async def generate_study_plan(payload: StudyPlanRequest):
+    """Generate a study plan in the response shape expected by the dashboard."""
+    context = "\n\n".join(
+        str(message.get("content", ""))
+        for message in payload.messages
+        if isinstance(message, dict) and message.get("content")
+    )
+    if not context:
+        raise HTTPException(status_code=400, detail="Study-plan context is required.")
+
+    system_instruction = """You are an educational planning assistant. Create a practical, concise study plan and exactly three actionable reminders from the supplied course context.
+
+Return ONLY valid JSON in this exact shape:
+{
+  "planMarkdown": "A clear step-by-step study plan.",
+  "reminders": ["Reminder one", "Reminder two", "Reminder three"]
+}
+Do not use Markdown fences or add text outside the JSON object."""
+
+    try:
+        response = await get_gemini_client().aio.models.generate_content(
+            model=MODEL_NAME,
+            contents=[types.Content(role="user", parts=[types.Part.from_text(text=context)])],
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_level="HIGH"),
+                system_instruction=[types.Part.from_text(text=system_instruction)],
+            ),
+        )
+        plan = json.loads((response.text or "").strip())
+        if not isinstance(plan.get("planMarkdown"), str) or not isinstance(plan.get("reminders"), list):
+            raise ValueError("The response did not have the expected study-plan structure.")
+
+        # Retain the existing dashboard's `data.message.content` contract.
+        return {"message": {"content": json.dumps(plan)}}
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=502, detail=f"Gemma returned invalid study-plan JSON: {exc}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Gemma study-plan generation failed: {exc}")
