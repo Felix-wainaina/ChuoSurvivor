@@ -43,7 +43,26 @@ export default function UploadMaterial() {
       await set(`pdf_file_${generatedNoteId}`, file);
 
       // 2. Mock Backend Integration Loop: Simulate waiting 1.5s for Francis's API
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // await new Promise((resolve) => setTimeout(resolve, 1500));
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('user_prompt', `Please explain the content of this PDF in ${language === 'en' ? 'English' : 'Kiswahili'}.`);
+        
+        const response = await fetch('http://localhost:8000/explain', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Gemini API Response:', data);
+      } catch (apiError) {
+        console.error('Error calling Gemini API:', apiError);
+      }
 
       // Grab simulated structured response from resources
       const mockResult = mockSavedNotes[selectedUnit === '1' ? 0 : 1];
