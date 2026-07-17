@@ -1,1 +1,13 @@
 @import "tailwindcss";
+@import "./styles/fonts.css";
+
+@theme {
+  --font-touchme: "TouchMeSans", sans-serif;
+  --font-dmsans: "DMSans", sans-serif;
+}
+
+/* Set DM Sans as the default font for the whole app */
+body {
+  font-family: var(--font-dmsans);
+  @apply bg-[#0f172a] text-white; /* Setting a dark default background based on your layout */
+}
