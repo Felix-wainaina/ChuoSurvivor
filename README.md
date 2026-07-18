@@ -1,31 +1,32 @@
 # ChuoSurvivor 🎓
 ### Your AI-Powered Campus Survival Guide
 
-ChuoSurvivor is an offline-first AI study companion built for the **Gemma 4 Hackathon**. It helps university students understand lecture content anywhere — even with no internet connection — by running Google's **Gemma 4 (e4b)** model locally through Ollama.
+ChuoSurvivor is a web-based, AI-native study platform built for the **Gemma 4 Hackathon**. It helps university students navigate dense lecture content anywhere—even during total network blackouts—by combining a high-performance cloud agent with a seamless browser-side **Gemma 4 E2B** edge engine fallback.
 
-Built for the **Edge / On-Device Track**.
+Built for the **Autonomous Agent Track** and the **Local Language & Culture Track**.
 
 ---
 
 ## 📖 Overview
 
-Students upload a photo of their lecture notes, textbook page, or assignment. ChuoSurvivor:
+Students upload lecture notes, textbook PDFs, or assignments. ChuoSurvivor uses a **Hybrid Cloud-to-Edge AI architecture** to deliver zero-downtime tutoring:
 
-1. **Explains** the content simply — in English or simplified Kiswahili
-2. **Generates a short quiz** to reinforce understanding
-3. **Saves everything locally**, so notes and quizzes remain accessible with zero internet connectivity, even after closing the app
+1. **Explains** the content simply—in localized English or conversational Kiswahili.
+2. **Generates a short quiz** to reinforce understanding with strict schema formatting.
+3. **Architects a Day-by-Day Study Plan** tailored to the document's density.
 
-All AI inference runs **entirely on-device** via Ollama — no cloud API calls, no data leaving the machine.
+**The Hybrid AI Magic:** When internet connectivity drops or cloud requests time out, a smart client-side router seamlessly shifts execution directly to Google's browser-optimized **Gemma 4 E2B** model running completely offline inside the user's browser storage using WebGPU.
 
 ---
 
 ## ✨ Features
 
-- 📷 **Image-based explanations** — upload lecture notes or textbook pages, get a simplified breakdown
-- 🌍 **Bilingual output** — toggle between English and simplified Kiswahili explanations
-- 📝 **Auto-generated quizzes** — reinforces what was just explained
-- 💾 **Offline persistence** — saved notes and quizzes are browsable without any internet connection
-- 🔒 **Privacy-first** — all inference happens locally; nothing is sent to external servers
+- 📷 **Multimodal Document Ingestion** — Upload scanned lecture notes or text PDFs for immediate synthesis.
+- 🌍 **Bilingual Tool-Calling** — Toggle between English and simplified Kiswahili explanations, matching the authentic tone of Kenyan students.
+- 📝 **Dynamic JSON Quiz Generator** — Auto-generates exactly 10 non-repetitive multiple-choice questions natively.
+- 🚀 **Cloud-to-Edge Routing Fallback** — Automatically switches to on-device edge inference if the backend network is unavailable.
+- ⚡ **PWA Offline Persistence** — Fully functional Progressive Web App (PWA) with complete static UI caching and a background Web Worker execution system.
+- 💾 **Data-Loss Prevention** — A "Save Anyway" pipeline caching materials locally into IndexedDB and `localStorage`.
 
 ---
 
@@ -33,10 +34,12 @@ All AI inference runs **entirely on-device** via Ollama — no cloud API calls, 
 
 | Layer | Technology |
 |---|---|
-| Frontend | React + TypeScript + Vite + Tailwind CSS v4 |
-| Backend | FastAPI (Python) |
-| AI Model | Gemma 4 (`gemma-4-26b-a4b-it`) via Google AI Studio |
-| Offline Storage | IndexedDB (`idb-keyval`) |
+| **Frontend** | React + TypeScript + Vite + Tailwind CSS v4 |
+| **Edge AI Framework** | MediaPipe LLM Inference API (WebGPU runtime) |
+| **Offline Engine** | Gemma 4 E2B (`gemma-4-E2B-it-litert-lm`) running in Web Worker |
+| **Backend** | FastAPI (Python) |
+| **Cloud Agent** | Gemma 4 via Google AI Studio API |
+| **Offline Storage** | IndexedDB (`idb-keyval`) + Cache API |
 
 ---
 
@@ -46,11 +49,7 @@ Before running this project, make sure you have:
 
 - [Node.js](https://nodejs.org/) (v18 or later) and npm
 - [Python](https://www.python.org/) (v3.10 or later)
-- [Ollama](https://ollama.com/download) installed locally
-- The Gemma 4 model pulled:
-  ```bash
-  ollama pull gemma4:e4b
-  ```
+- A modern web browser with WebGPU enabled (Chrome recommended)
 
 ---
 
@@ -59,17 +58,23 @@ Before running this project, make sure you have:
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Felix-wainaina/ChuoSurvivor.git
 cd ChuoSurvivor
-```
 
-### 2. Set up the frontend
+### 2. Set up the frontend (Production Build / PWA Testing)
+To fully verify the PWA service workers and edge AI capabilities, build and serve the production distribution folder:
 
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+Install a simple global server tool to run production bundles locally:
+
+Bash
+npm install -g serve
+serve -s dist
+Open the address provided (usually http://localhost:3000) in Chrome.
 
 The frontend will be available at `http://localhost:5173` (or as shown in your terminal).
 
@@ -112,14 +117,20 @@ ChuoSurvivor/
 ```
 
 ---
+🌐 Offline Verification Workflow
+To test the hybrid fallback engine:
 
-## 🌐 Offline Verification
+Launch the frontend using serve -s dist.
 
-To confirm the app runs fully offline:
+Turn on "Enable Offline Study Mode (Requires ~3GB Download)" in the study workspace UI.
 
-1. Turn off wifi / enable airplane mode
-2. Upload a lecture note image and generate an explanation + quiz
-3. Close and reopen the app — saved notes should still load from local storage
+Wait for the loading bar to hit 100% and toggle the OFFLINE READY indicator.
+
+Open Chrome DevTools (Inspect), navigate to the Network tab, and toggle your status to "Offline" (or pull your machine's Wi-Fi cord).
+
+Refresh the page. The application will load immediately via Service Worker precaching.
+
+Ask a follow-up question. The app will detect the disconnection, trigger a toast alert, and stream the generated response entirely inside the client using the browser's hardware!
 
 ---
 
@@ -127,7 +138,7 @@ To confirm the app runs fully offline:
 
 | Name | Role |
 |---|---|
-| Felix Nduati | Frontend & Integration Lead |
+| Felix Nduati | Frontend , PWA & Integration Lead |
 | Francis Mung'ang'u | Backend / Ollama Bridge |
 | Nevean Adhiambo | Prompt Engineering & Multilingual Layer |
 | Baruch Marambi | Offline Storage & Persistence |
