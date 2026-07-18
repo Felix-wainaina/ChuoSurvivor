@@ -58,6 +58,10 @@ class StudyPlanRequest(BaseModel):
     messages: list[dict]
 
 
+class ChatRequest(BaseModel):
+    prompt: str
+
+
 class Response(BaseModel):
     text: str
 
@@ -77,6 +81,31 @@ def get_gemini_client() -> genai.Client:
     # object can let its underlying HTTP client close during an async request.
     gemini_client = genai.Client(api_key=api_key)
     return gemini_client
+
+
+@app.post("/chat", response_model=Response)
+async def chat(payload: ChatRequest):
+    """Cloud-first study chat used by the browser's offline fallback router."""
+    if not payload.prompt.strip():
+        raise HTTPException(status_code=400, detail="A study question is required.")
+    try:
+        response = await get_gemini_client().aio.models.generate_content(
+            model=MODEL_NAME,
+            contents=[types.Content(role="user", parts=[types.Part.from_text(text=payload.prompt)])],
+            config=types.GenerateContentConfig(
+                system_instruction=[types.Part.from_text(text=(
+                    "You are a concise, encouraging study assistant. Answer using the supplied "
+                    "study context, explain concepts clearly, and say when the context is insufficient."
+                ))],
+            ),
+        )
+        if not response.text:
+            raise HTTPException(status_code=502, detail="Gemma returned an empty chat response.")
+        return {"text": response.text.strip()}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Gemma chat generation failed: {exc}")
 
 def optimize_image_as_base64(file_bytes: bytes) -> str:
     """
