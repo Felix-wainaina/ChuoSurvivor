@@ -51,7 +51,7 @@ export default function AddUnitForm({ isOpen, onClose, onAdd }: AddUnitFormProps
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-dmsans">
-      <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl border border-slate-100 animate-scaleUp">
+      <div className="bg-white w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl p-4 sm:p-6 shadow-xl border border-slate-100 animate-scaleUp">
         <h3 className="text-xl font-bold text-slate-900 mb-4">
           Add new course unit
         </h3>
@@ -71,7 +71,7 @@ export default function AddUnitForm({ isOpen, onClose, onAdd }: AddUnitFormProps
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                 Deadline Type
@@ -114,7 +114,7 @@ export default function AddUnitForm({ isOpen, onClose, onAdd }: AddUnitFormProps
             </div>
           )}
 
-          <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-slate-100">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-2 pt-2 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}

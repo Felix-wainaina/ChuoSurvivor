@@ -83,12 +83,12 @@ export default function StudyUnitView() {
       <Navbar />
       
       {/* Dynamic Header Structural Layout Area */}
-      <div className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shadow-sm z-10">
-        <div>
+      <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between shadow-sm z-10">
+        <div className="min-w-0">
           <span className="text-xs font-semibold bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full uppercase tracking-wider">
             {unitData.courseCode}
           </span>
-          <h1 className="text-xl font-bold mt-1">{unitData.title}</h1>
+          <h1 className="text-xl font-bold mt-1 break-words">{unitData.title}</h1>
         </div>
         <button 
           onClick={() => navigate('/my-units')}
@@ -99,13 +99,13 @@ export default function StudyUnitView() {
       </div>
 
       {/* Two-Column split screen view container wrapper */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden h-[calc(100vh-140px)]">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-visible lg:overflow-hidden h-auto lg:h-[calc(100vh-140px)]">
         
         {/* LEFT COLUMN: Simplified Summary Content View Panel */}
-        <div className="p-6 md:p-8 overflow-y-auto border-r border-slate-200 bg-white">
-          <h2 className="text-lg font-bold mb-4 text-slate-800 pb-2 border-b border-slate-100 flex items-center justify-between">
-            <span>Simplified AI Explanation Summary</span>
-            <span className="text-xs font-normal text-slate-400 capitalize bg-slate-100 px-2 py-0.5 rounded">
+        <div className="p-4 sm:p-6 md:p-8 overflow-y-auto border-r border-slate-200 bg-white">
+          <h2 className="text-lg font-bold mb-4 text-slate-800 pb-2 border-b border-slate-100 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span> Simplified AI Explanation Summary</span>
+            <span className="text-xs font-normal text-slate-400 capitalize bg-slate-100 px-2 py-0.5 rounded whitespace-nowrap">
               Language: {unitData.language === 'sw' ? 'Kiswahili' : 'English'}
             </span>
           </h2>
@@ -115,12 +115,12 @@ export default function StudyUnitView() {
         </div>
 
         {/* RIGHT COLUMN: Interactive Follow-up Learning AI Chat Layout */}
-        <div className="flex flex-col bg-slate-50 overflow-hidden h-full">
+        <div className="flex flex-col bg-slate-50 overflow-hidden min-h-[28rem] lg:h-full">
           {/* Chat message timeline window wrapper */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-4">
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
+                <div className={`max-w-[80%] break-words rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
                   msg.sender === 'user' 
                     ? 'bg-blue-600 text-white rounded-br-none' 
                     : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none'
@@ -132,7 +132,7 @@ export default function StudyUnitView() {
           </div>
 
           {/* Interactive chat action string form prompt input bar */}
-          <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-slate-200 flex items-center space-x-3">
+          <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-white border-t border-slate-200 flex items-center gap-2 sm:gap-3">
             <input
               type="text"
               value={inputMessage}

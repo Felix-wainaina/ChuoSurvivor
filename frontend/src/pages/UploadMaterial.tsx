@@ -148,7 +148,7 @@ export default function UploadMaterial() {
     <div className="min-h-screen w-full flex flex-col font-dmsans bg-white text-slate-900 select-none">
       <Navbar />
 
-      <main className="flex-1 px-8 md:px-16 max-w-3xl mx-auto w-full pt-12 pb-20">
+      <main className="flex-1 px-4 sm:px-8 md:px-16 max-w-3xl mx-auto w-full pt-8 sm:pt-12 pb-20">
         {/* Back Button and Context Title Header */}
         <button 
           onClick={() => navigate(-1)}
@@ -160,7 +160,7 @@ export default function UploadMaterial() {
           Back to Dashboard
         </button>
 
-        <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-1">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mb-1 break-words">
           New material — <span className="uppercase text-slate-700">{currentUnit ? currentUnit.name : 'Unassigned Unit'}</span>
         </h1>
         <p className="text-slate-500 text-sm mb-8">Upload photos or PDFs of your notes.</p>
@@ -191,19 +191,19 @@ export default function UploadMaterial() {
         {selectedFiles.length > 0 && (
           <div className="flex flex-col gap-3 mb-8">
             {selectedFiles.map((file, idx) => (
-              <div key={idx} className="w-full border border-slate-100 bg-white shadow-sm rounded-xl p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div key={idx} className="w-full border border-slate-100 bg-white shadow-sm rounded-xl p-4 flex items-center justify-between min-w-0">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className={`px-2.5 py-1 rounded text-[10px] font-black tracking-wider ${file.type.includes('pdf') ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
                     {file.type.includes('pdf') ? 'PDF' : 'IMG'}
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900 max-w-md truncate">{file.name}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900 truncate">{file.name}</p>
                     <p className="text-xs text-slate-400">Ready for local engine evaluation</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => removeFileFromQueue(idx)}
-                  className="text-slate-400 hover:text-slate-900 transition-colors p-1"
+                  className="shrink-0 text-slate-400 hover:text-slate-900 transition-colors p-1"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -215,7 +215,7 @@ export default function UploadMaterial() {
         )}
 
         {/* Inference Execution Configuration Panel */}
-        <div className="flex items-center gap-4 mb-10 border-b border-slate-100 pb-6">
+        <div className="flex flex-col items-start sm:flex-row sm:items-center gap-3 sm:gap-4 mb-10 border-b border-slate-100 pb-6">
           <span className="text-sm font-bold text-slate-500">Explain in:</span>
           <div className="bg-slate-100 p-1 rounded-full flex gap-1">
             <button 
@@ -234,7 +234,7 @@ export default function UploadMaterial() {
         </div>
 
         {/* Action Controls */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button 
             onClick={() => handleTriggerInference('explain')}
             className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-100 transition-colors text-sm cursor-pointer flex items-center justify-center gap-2"

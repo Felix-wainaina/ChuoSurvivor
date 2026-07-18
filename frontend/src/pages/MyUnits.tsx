@@ -99,7 +99,7 @@ export default function MyUnits() {
     <div className="min-h-screen w-full flex flex-col font-dmsans bg-white text-slate-900 select-none">
       <Navbar />
 
-      <main className="flex-1 px-8 md:px-16 max-w-5xl mx-auto w-full pt-12 pb-20">
+      <main className="flex-1 px-4 sm:px-8 md:px-16 max-w-5xl mx-auto w-full pt-8 sm:pt-12 pb-20">
         
         {/* --- HEADER SECTION --- */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -107,7 +107,7 @@ export default function MyUnits() {
         </div>
 
         {units.length === 0 ? (
-          <div className="w-full border-2 border-dashed border-gray-300 rounded-2xl p-16 flex flex-col items-center justify-center text-center bg-gray-50/50">
+          <div className="w-full border-2 border-dashed border-gray-300 rounded-2xl p-6 sm:p-16 flex flex-col items-center justify-center text-center bg-gray-50/50">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
             </svg>
@@ -182,7 +182,7 @@ export default function MyUnits() {
       {/* Edit Unit Modal Overlay */}
       {editingUnit && (
         <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto shadow-2xl">
             <h2 className="text-xl font-black text-slate-900 mb-6">Edit Unit Details</h2>
             
             <div className="flex flex-col gap-5">
@@ -199,7 +199,7 @@ export default function MyUnits() {
               </div>
 
               {/* Date Type & Value Edit */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1 block">Event Type</label>
                   <select
@@ -226,7 +226,7 @@ export default function MyUnits() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-3 mt-4">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mt-4">
                 <button 
                   onClick={() => setEditingUnit(null)} 
                   className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"

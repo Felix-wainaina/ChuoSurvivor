@@ -191,11 +191,11 @@ export default function UnitDashboard() {
       {/* Interactive 10-Question Quiz Terminal Drawer */}
       {activeQuizContext && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-end animate-fadeIn">
-          <div className="bg-white w-full max-w-2xl h-full shadow-2xl p-6 flex flex-col justify-between animate-slideLeft">
+          <div className="bg-white w-full max-w-2xl h-full shadow-2xl p-4 sm:p-6 flex flex-col justify-between animate-slideLeft">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] uppercase tracking-wider font-extrabold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">Gemma Agent Core</span>
-                <h2 className="text-xl font-bold text-slate-900 mt-1 truncate max-w-md">Quiz: {activeQuizContext.title}</h2>
+                <h2 className="text-xl font-bold text-slate-900 mt-1 truncate">Quiz: {activeQuizContext.title}</h2>
               </div>
               <button onClick={() => setActiveQuizContext(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-900 transition-colors cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -245,7 +245,7 @@ export default function UnitDashboard() {
             {/* Quiz Action Control Bar */}
             <div className="pt-4 border-t border-slate-100 bg-white">
               {quizSubmitted ? (
-                <div className="flex items-center justify-between p-3 bg-slate-900 rounded-2xl text-white">
+                <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between p-3 bg-slate-900 rounded-2xl text-white">
                   <div className="pl-2">
                     <p className="text-xs font-semibold text-slate-400">Quiz Grading Complete</p>
                     <p className="text-lg font-black">Score: {calculateQuizScore()} / {activeQuizContext.questions.length}</p>
@@ -270,19 +270,19 @@ export default function UnitDashboard() {
       {/* Visual Canvas Document Reader Sidebar Drawer */}
       {previewingFile && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-end animate-fadeIn">
-          <div className="bg-white w-full max-w-2xl h-full shadow-2xl p-6 flex flex-col justify-between animate-slideLeft">
+          <div className="bg-white w-full max-w-2xl h-full shadow-2xl p-4 sm:p-6 flex flex-col justify-between animate-slideLeft">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
               <div className="flex items-center gap-3 min-w-0">
                 <span className={`px-2.5 py-1 rounded-lg font-black text-[10px] uppercase shrink-0 ${previewingFile.type === 'pdf' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{previewingFile.type}</span>
-                <h2 className="text-xl font-bold text-slate-900 truncate max-w-md">{previewingFile.title}</h2>
+                <h2 className="text-xl font-bold text-slate-900 truncate">{previewingFile.title}</h2>
               </div>
               <button onClick={() => setPreviewingFile(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-900 transition-colors cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto bg-slate-50 rounded-2xl border border-slate-200 p-6 font-mono text-slate-700">
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm min-h-[100%] flex flex-col gap-6">
+            <div className="flex-1 overflow-y-auto bg-slate-50 rounded-2xl border border-slate-200 p-3 sm:p-6 font-mono text-slate-700">
+              <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-sm min-h-[100%] flex flex-col gap-6">
                 <div className="flex items-center justify-between border-b pb-4 border-slate-100">
                   <span className="text-xs text-slate-400 font-bold uppercase tracking-widest">Document Workspace Layer</span>
                   <span className="text-xs text-slate-400">Page 1 of 1</span>
@@ -297,7 +297,7 @@ export default function UnitDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 bg-white">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-100 bg-white">
               <button onClick={() => { setPreviewingFile(null); triggerAiAction('quiz', previewingFile.title); }} className="w-full bg-slate-100 text-slate-900 font-bold py-3.5 rounded-xl text-sm hover:bg-slate-200 transition-colors cursor-pointer">Generate Target Quiz</button>
               <button onClick={() => { setPreviewingFile(null); triggerAiAction('studyplan', previewingFile.title); }} className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl text-sm hover:bg-slate-800 transition-colors cursor-pointer">Generate Study Plan</button>
             </div>
@@ -306,7 +306,7 @@ export default function UnitDashboard() {
       )}
 
       {/* Main Layout Area */}
-      <main className="flex-1 px-8 md:px-16 max-w-5xl mx-auto w-full pt-12 pb-20">
+      <main className="flex-1 px-4 sm:px-8 md:px-16 max-w-5xl mx-auto w-full pt-8 sm:pt-12 pb-20">
         
         {/* Error Alert Box Banner */}
         {agentError && (
@@ -378,7 +378,7 @@ export default function UnitDashboard() {
         )}
 
         {unitMaterials.length === 0 ? (
-          <div className="w-full border-2 border-dashed border-gray-200 rounded-2xl p-16 flex flex-col items-center justify-center text-center bg-gray-50/30">
+          <div className="w-full border-2 border-dashed border-gray-200 rounded-2xl p-6 sm:p-16 flex flex-col items-center justify-center text-center bg-gray-50/30">
             <h3 className="text-lg font-bold text-slate-800 mb-4">No materials uploaded yet for this course unit workspace.</h3>
             <Link to={`/unit/${id}/upload`} className="bg-slate-900 text-white font-bold px-6 py-3 rounded-full hover:bg-slate-800 transition-all text-sm cursor-pointer shadow-sm">Upload your first material</Link>
           </div>

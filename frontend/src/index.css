@@ -11,3 +11,21 @@ body {
   font-family: var(--font-dmsans);
   @apply bg-white text-slate-900; /* Global white background, dark text */
 }
+
+/* Keep intrinsic content and padding from creating a horizontal page scroll. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-width: 0;
+  max-width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
